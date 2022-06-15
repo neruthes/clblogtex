@@ -1,0 +1,56 @@
+\chapter{Kotlin/JS Promise 與 Coroutine 的互相轉換}
+
+\ardate{2022年06月10日}{笔记 / 技术}
+
+最近在嘗試 Kotlin/JS 的程式構建，遇到 Coroutine 和 Promise 的互相轉換問題。
+
+\section*{Promise -> suspend func}
+
+從Promise轉換為suspend function是比較簡單的。Kotlin的suspend function都能通過\icode{suspendCoroutine()}暫時掛起。給Promise增加一個擴展函數\icode{await()}：
+
+\begin{lstlisting}
+suspend fun <T> Promise<T>.await() : T = suspendCoroutine { coroutine ->
+    then { 
+        coroutine.resumeWith(Result.success(it)) 
+    }.catch { 
+        coroutine.resumeWith(Result.failure(it)) 
+    }
+}
+\end{lstlisting}
+
+\section*{suspend func -> Promise}
+
+但反過來讓suspend function變Promise則稍微有點麻煩，遂查閱Google⋯⋯
+
+結果發現方法還蠻簡單的。需要使用Kotlin/JS給suspend函數提供的\icode{startCoroutine()}函數，該函數需要一個\icode{Continuation<T>}傳入為suspend function提供上下文。
+
+在此新建一個函數\icode{promise()}：
+
+\begin{lstlisting}
+fun <T> promise(coroutineContext : CoroutineContext = EmptyCoroutineContext, block: suspend () -> T) : Promise<Result<T>> {
+    return Promise { resolve, reject ->
+        block.startCoroutine(object : Continuation<T> {
+                override val context: CoroutineContext get() = coroutineContext
+                override fun resumeWith(result: Result<T>) {
+                        if(result.isFailure) reject(result.exceptionOrNull() ?: Exception("Coroutine failed."))
+                        else resolve(result)
+                    }
+            })
+    }
+}
+\end{lstlisting}
+
+直接把suspend function的resume result返回出去，這樣也能暴露更多控制權以及減少\icode{promise()}函數的工作量。提供一個默認的coroutineContext，允許以後按需切換。
+
+以上。
+
+
+
+\reflist{
+    \item \refhref{https://gist.github.com/nosix/5994e53d5bef20292b998d6690649dc1}{nosix/coroutineSample.kt}
+    \item \refhref{https://discuss.kotlinlang.org/t/async-await-on-the-client-javascript/2412}{Async await on the client (JavaScript)}
+    \item \refhref{https://sbfl.net/blog/2016/07/13/simplifying-async-code-with-promise-and-async-await/}{Promiseとasync/awaitでJavaScriptの非同期処理をシンプルに記述する}
+}
+
+
+

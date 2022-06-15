@@ -1,0 +1,199 @@
+\documentclass[11pt,a4paper]{report}
+\usepackage[a4paper,textwidth=42em,tmargin=20mm,bmargin=30mm]{geometry}
+\usepackage{calc}
+\usepackage{amsmath,xltxtra,fontspec,xunicode}
+\usepackage{titlesec}
+
+\usepackage{tcolorbox}
+\usepackage{tocloft}
+\renewcommand{\cftchapfont}{\vspace{0pt}\mdseries\rmfamily}
+\renewcommand{\cftchappagefont}{\vspace{0pt}\mdseries\rmfamily}
+\setlength{\cftbeforechapskip}{0pt}
+
+\usepackage{paralist,enumerate,enumitem}
+\setdefaultleftmargin{2em}{2em}{1em}{1em}{1em}{1em}
+
+\usepackage{datetime2}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+    colorlinks=false,
+    pdfpagemode=FullScreen
+}
+
+\usepackage{footmisc}
+\makeatletter
+\@addtoreset{footnote}{chapter}
+\makeatother
+
+
+\usepackage{listings}
+\lstset{
+	basicstyle=\ttfamily\footnotesize,
+	numbersep=5pt,
+	backgroundcolor=\color{black!5},
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	tabsize=2,
+	captionpos=b,
+	breaklines=true,
+	breakatwhitespace=true,
+	breakautoindent=true,
+	linewidth=\textwidth
+}
+
+
+
+\usepackage[PunctStyle=plain,RubberPunctSkip=false,CJKglue=\hskip 0pt,CJKecglue=\hskip 6pt plus 16pt]{xeCJK}
+\usepackage{xeCJKfntef}
+\XeTeXlinebreaklocale "zh"
+\XeTeXlinebreakskip = 0pt plus 1pt
+
+% =========================================
+\usepackage{fancyhdr}
+\usepackage{graphicx,eso-pic}
+
+% Optional fonts: Libertinus Serif, Tinos, Literata
+\setmainfont{Latin Modern Roman}
+\setromanfont{Latin Modern Roman}
+\setsansfont{Noto Sans}
+\setmonofont{JetBrains Mono NL}
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKromanfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans CJK SC}
+
+\linespread{1.25}
+
+
+
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0em}
+
+
+
+\title{Catten Linger Blog Articles Collection}
+\author{Volume 2}
+\date{Build Date: \today}
+
+% Chapter heading
+% \newcommand{\leftpad}[1]{\ifnum#1<100 0\ifnum#1<10 0\fi\fi#1}
+\newcommand{\leftpad}[1]{#1}
+\titleformat{\chapter}[display]{\small\mdseries\rmfamily\fontspec[Ligatures=TeX]{Noto Serif CJK SC}}{\raggedright\mdseries\large\ttfamily Vol 2:\leftpad{\thechapter}\vspace{1pt}}{0pt}{\Large\bfseries}
+
+\newcommand{\ardate}[3]{%
+    % $1=date $2=tags
+    \noindent\begin{minipage}{\textwidth}
+        \noindent{%
+            \ttfamily\small#1%
+        } \hfill {%
+            \footnotesize
+            \sffamily
+            \fontspec{Noto Sans Mono Condensed}
+            #2%
+        }%
+    \end{minipage}\par
+    \vspace{8pt}
+    \hrule
+    \vspace{30pt}\par
+}
+
+\newcommand{\anchorTextColor}[1]{%
+    \textcolor{blue!80!green}{#1}%
+}
+\newcommand{\inlinehref}[2]{%
+    \phantomleadingspace%
+    {\anchorTextColor{%
+        \href{#1}{#2}%
+    }}%
+    \phantomleadingspace%
+    \footnote{URL: \href{#1}{#1}}%
+    \phantomleadingspace%
+}
+\newcommand{\refhref}[2]{%
+    % $1=url $2=text
+    \href{#1}{\raggedright#2\\\fontsize{8pt}{9.5pt}\ttfamily\anchorTextColor{#1}}%
+}
+\newcommand{\reflist}[1]{
+    \vskip 30pt
+    \vfill
+    参考资料\par
+    \begin{compactitem}\small
+        #1
+    \end{compactitem}
+}
+
+\newcommand{\phantomleadingspace}[0]{%
+    \ifhmode%
+        \hskip 7pt plus 15pt%
+    \fi%
+}
+\newcommand{\icode}[1]{%
+    \phantomleadingspace%
+    \texttt{\small\textcolor{red!60!black}{#1}}%
+    \hskip 5pt plus 20pt%
+}
+
+\newcommand{\infonote}[1]{%
+    \begin{tcolorbox}[colback=green!5!white,colframe=green!25!gray,boxrule=0.4pt,left=8pt,right=8pt]
+        \footnotesize\sffamily
+        #1
+    \end{tcolorbox}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{document}
+
+\begin{titlepage}
+	\maketitle
+\end{titlepage}
+
+\tableofcontents
+\clearpage
+
+
+
+
+
+
+\input{./vol2/list.tex}
+
+
+
+
+
+\cleardoublepage
+\pagestyle{empty}
+\hspace{1pt}
+\vfill
+\fontspec{Latin Modern Roman}\small
+
+Copyright \copyright{} 2022 Catten Linger.\\
+Published with Creative Commons \textbf{CC BY-NC-SA 4.0} license.
+
+版权所有 \copyright{} 2022 Catten Linger。\\
+博客内容遵循\textbf{署名-非商业性使用-相同方式共享4.0国际（CC BY-NC-SA 4.0）}协议。
+
+This PDF may be found at:\\
+\href{https://neruthesgithubdistweb.vercel.app/clblogtex/blog/CL\_vol2.pdf}{\ttfamily\footnotesize https://neruthesgithubdistweb.vercel.app/clblogtex/blog/CL\_vol2.pdf}
+
+
+
+\end{document}

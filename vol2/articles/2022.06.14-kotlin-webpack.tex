@@ -1,0 +1,435 @@
+\chapter{Kotlin/JS 來嘗試寫一個 Webpack 的 Kotlin DSL 吧！}
+
+\ardate{2022年06月14日}{笔记 / 技术}
+
+
+\infonote{本文的最終目的是編寫出能調用 Webpack 來施行構建流程的 Kotlin Build Script。}
+
+
+
+
+
+
+
+\section*{前言}
+
+因為惱於JavaScript的無類型，又不喜歡TypeScript的類型系統，於是就有了嘗試用Kotlin開發前端的嘗試。
+
+不過一番搜尋和嘗試後，我放棄了。兩個類型系統相差懸殊，Kotlin依舊保留了大量的JVM平台行為，各種容器和類型的包裝並不能輕易地和前端開發的習慣匹配。
+
+但我都研究了這麼多了，不拿來玩一下豈不就浪費掉了嘛。於是就把目光投向了每次都惹我惱的Webpack配置。（我真的討厭配Webpack）
+
+
+
+
+
+
+
+\section*{環境說明}
+
+
+\infonote{本文涉及NPM、Javascript、Kotlin以及Bash終端的運用。所有需要的指令都在專案目錄下局部安裝。}
+
+運行環境為macOS，Linux應該沒問題。Kotlin的編寫使用的是IDEA Ultimate。Webpack版本5。
+
+使用\icode{npm init}創建一個專案目錄後進入，然後開始操作。
+
+
+
+
+
+
+
+\section*{如何編譯Kotlin程式碼？}
+
+編譯Kotlin程式碼需要使用\icode{kotlinc-js}指令。
+
+\begin{lstlisting}
+npm i --save-dev kotlin
+\end{lstlisting}
+
+\icode{kotlin-js}的使用很簡單：
+
+\begin{lstlisting}
+kotlin-js [程式碼目錄] -libraries [程式庫目录] -output [最终 JavaScript 输出檔]
+\end{lstlisting}
+
+程式庫目錄是可選的，默認會包含Kotlin stdlib本身。如果僅使用stdlib則無須使用。
+
+最終輸出是一個單一JavaScript檔案。直接執行即可。
+
+\icode{kotlin-js}還有一些值得注意的選項：
+
+\begin{compactitem}
+    \item \icode{-module-kind}：JavaScript模塊類型使用，支援\icode{plain | amd | commonjs | umd}四個選項。我個人建議只使用\icode{commonjs}選項。其他選項構建出來的結果不適合單獨執行。
+    \item \icode{-main}：是否調用\icode{main()}函數。選項為\icode{call | noCall}，即調用或不調用，默認為調用。在寫程式庫時可能需要用到\icode{noCall}。
+    \item \icode{-meta-info}：輸出Kotlin元數據。方便其他Kotlin JS程序引入使用。
+\end{compactitem}
+
+更多選項可執行\icode{kotlinc-js -help}查看。
+
+
+
+
+
+
+
+
+\section*{Kotlin 程式庫依賴}
+
+Kotlin stdlib是自帶的。Webpack運行於Node.js，需要Node JS的Kotlin API。雖然可以按需使用\icode{extrenal}關鍵詞聲明原生JavaScript實現，但更方便的是使用Kotlin官方做好的聲明。
+
+嘗試在IDEA上新建一個Kotlin JS專案後，找到了對應的依賴\icode{org.jetbrains.kotlinx: kotlinx-nodejs:0.0.7}，但可惜JCenter已經sunset了，我沒找到Gradle到底是從哪裡下載這個包的，在其GitHub專案首頁也沒有對應的下載連結，我暫時把它放在我們的倉庫中，如有需要可以臨時使用：\hskip 4pt plus 100pt\inlinehref{https://nexus.shinonometn.com/repository/maven-public/}{https://nexus.shinonometn.com/repository/maven-public/}（本人不對服務質量作保證）。
+
+雖說stdlib是自帶的，但我還是建議下載\icode{org.jetbrains.kotlin:kotlin-stdlib-js: 1.6.21}並將其加入Project Library。
+配置關鍵詞提醒
+
+使用IDEA打開專案目錄，把下載好的\icode{kotlinx-nodejs} jar包增加至Project Library即可獲得關鍵詞提醒功能。
+
+為了目錄的乾淨整潔，我新建了buildSrc目錄放置所有Webpack構建用程式。將其添加至專案的Source Root後，Kotlin關鍵詞提醒將正常工作。
+
+
+
+
+
+
+
+\section*{JavaScript 程式庫依賴}
+
+\begin{lstlisting}
+npm i --save-dev webpack webpack-merge webpack-dev-server html-webpack-plugin copy-webpack-plugin mini-css-extract-plugin chalk@4 ora@1.2.0 rimraf
+\end{lstlisting}
+
+Webpack是必須的了。chalk、ora和rimraf用於展示如何從Kotlin調用JavaScript功能，也為了順便製造點eyecandy（XD
+
+chalk和ora必須使用commonjs module的版本，否則不能從kotlin調用。
+
+
+
+
+
+
+\section*{開始寫代碼}
+
+由於程式碼數量不少，這裡僅節選關鍵點，完整專案可訪問\inlinehref{https://github.com/CattenLinger/kotlin-webpack-dsl}{GitHub鏈接}。
+
+\subsection*{main 入口}
+
+在\icode{buildSrc}內的package level main將會成為整個程式的入口，且其只能聲明一次。可以是suspend function。
+
+\begin{lstlisting}
+import process
+suspend fun main() {
+    val args = process.argv.drop(2) // 0 是 node 程式，1 是程式檔案位置，丟掉這兩個便獲得参表。
+    // your codes here
+}
+\end{lstlisting}
+
+注意，這裡的main沒有args。是可以加進去的，但只會得到一個空數組。像普通的Node程式，命令行参表需要從\icode{process.argv}獲取。在引入\icode{kotlinx-nodejs}后，所有的Node API都可以像JVM上的包那样被引入。
+
+\subsection*{访问原始JavaScript内容}
+
+\begin{lstlisting}
+fun jsObject(): dynamic = js("({})")
+
+@DslMarker
+annotation class WebpackDsl
+
+class WebpackConfigContext(internal val config : WeboackConfigContext.() -> Unit) {
+    private val configObj = jsObject()
+
+    @WebpackDsl
+    fun mode(string: String) {
+        configObj.mode = string
+    }
+
+    // .... 更多的 DSL
+
+    fun build() = configObj
+}
+
+@WebpackDsl
+@Suppress("FunctionName")
+fun WebpackConfig(block: suspend WebpackConfigContext.() -> Unit) : (suspend  () -> WebpackConfigContext) = {
+    WebpackConfigContext(block)
+}
+\end{lstlisting}
+
+在Kotlin程式碼中調用JavaScript函數，需使用\icode{js(String)}函數。此函數會把內容內聯進當前位置，返回dynamic類型。
+
+\icode{dynamic}類型是一個比任意類型還任意類型的類型，代表著一個原始JavaScript存在。可以對此類型變數作任何操作：
+
+\begin{compactitem}
+    \item 賦予變數：例如 a 為 dynamic 類型，\icode{a.b = "1"; a.b = 2; a.b = suspend { }; a.b = Unit}\ldots{}都是合法的
+    \item 取變數
+    \item 調用：例如 a 為 dynamic 類型，\icode{a(); a(string1, value2, option3); a(... arrayOf ('a', 'b', 'c'))}\ldots{}都是合法的，返回值會是\icode{dynamic}類型。
+\end{compactitem}
+
+\icode{dynamic}類型也是危險的，因為等同於臨時關閉幾乎所有類型檢查，而且\icode{undefined | null}也是以\icode{dynamic}的形式返回，我們不能過度依賴它，只能在與JavaScript交互時使用。
+
+同時需要注意的是： 輸入的字符串不能是變數，必須是編譯時靜態的，任何動態的字符串拼接與變數的使用會觸發編譯時錯誤。但我們可以這樣：
+
+\begin{lstlisting}
+val a = "Hello World"
+js("console.log(a)")
+\end{lstlisting}
+
+還需要注意的是，此用法需在同一作用域內使用，否則 a 在編譯後的 JavaScript 裏可能會被帶上作用域後綴（最常見的是作用域深度後綴，例如\icode{\_0}）引起運行時錯誤：
+
+\begin{lstlisting}
+val webpack = js("require('webpack')")
+
+object Webpack {
+    fun invokeWebpack0(config : dynamic) = js("webpack(config)") // 這時候就可能出錯了，可以查看編譯後的 JavaScript 程式了解原因。
+
+    fun invokeWebpack1(config: dynamic) {
+        val w = webpack // 建議先拿到當前作用域再調用
+        js("w(config)") 
+    }
+
+    fun invokeWebpack2(config : dynamic) = webpack(config) // 當然，在此示例中直接調用 webpack 變數即可。
+}
+\end{lstlisting}
+
+使用這種方法，我們可以創建已有JavaScript庫的包裝（wrapper）：
+
+\begin{lstlisting}
+class OraSpinner(text : String) {
+
+    private val spinner = ora(text)
+
+    fun start() = spinner.start()
+
+    fun stop() = spinner.stop()
+
+    companion object {
+        private val ora = js("require('ora')")
+    }
+}
+\end{lstlisting}
+
+\subsection*{聲明原始JavaScript API}
+
+除了以上直接調用JavaScript的方法，還能夠使用\icode{@JsModule}注解配合\icode{external}关键词。
+
+\begin{lstlisting}
+@JsModule("chalk")
+@JsNonModule // 默認情況下，@JsModule 下的聲明在編譯後才能被使用，若此聲明服務於當前源碼，則需要加上 @JsNonModule 註解。
+external object Chalk {
+    fun red(string : String) : dynamic
+    fun blue(string: String) : dynamic
+}
+\end{lstlisting}
+
+以chalk为例，若已知其方法聲明，則可以直接原樣翻譯進Kotlin中，然後在外部調用這個聲明。
+
+\subsection*{suspend function與Promise的互相轉換}
+
+調用webpack或webpack-dev-server的API是會遇到Promise與suspend function的互相轉換問題。Kotlin JS中自帶coroutine，但其實現依舊是原汁原味的Kotlin Coroutine。
+
+關於這部分內容可參考我的另一篇文章：\inlinehref{https://cattenlinger.github.io/2022/06/10/Kotlin-JS-Promise-與-Coroutine-的互相轉換/}{Kotlin/JS Promise與Coroutine的互相轉換}。
+
+\subsection*{JavaScript類型實現與Kotlin類型實現的轉換}
+
+在Webpack配置中，最常用的除了標量類型（String、Number、Boolean等）就是集合類型（Array和Map）。但Kotlin中的List和Map的實現都不是使用JavaScript的Array和Object，Regex是個wrapper，在使用的時候就需要編寫點轉換函數了。
+
+\begin{lstlisting}
+// 構建 JS Object（Map）
+fun jsObject(): dynamic = js("({})") 
+
+// 構建 JS Array（List）
+// 其實 Kotlin 的 array 就是 js 的 array，但 kotlin 的實現不變長。
+fun jsArray(): dynamic = js("([])") 
+
+// 構建 JS RegExp
+fun jsRegex(@Suppress("UNUSED_PARAMETER") pattern: String): dynamic = js("new RegExp(pattern)")
+
+// 把 Kotlin Regex 變成 JS RegExp
+@Suppress("UNUSED_VARIABLE")
+fun Regex.nativePattern(): dynamic {
+    val that = this
+    return js("(that.nativePattern_0)") // Kotlin 的 Regex 內有個 nativePattern_0 ，把它拿出來就是了
+}
+
+// 把任何 String 為 Key 的 Map 變成 JS Object
+fun Map<String, *>.toJsObject(): dynamic {
+    val obj = jsObject()
+    for ((key, value) in this) obj[key] = value
+    return obj
+}
+
+// 把任何 Collection 變成 JS Array
+fun Collection<*>.toJsArray(): dynamic {
+    val array = jsArray()
+    forEachIndexed { index, item -> array[index] = item }
+    return array
+}
+\end{lstlisting}
+
+\subsection*{調用Webpack和Webpack Dev Server}
+
+webpack函數吃一個webpack配置和一個回調。
+
+\begin{lstlisting}
+private val webpack = js("require('webpack')")
+
+suspend fun webpack(config : WeboackConfigContext) = suspendCoroutine<dynamic> {
+    val rawConfig = config.build()
+    webpack(rawConfig) { error, stats -> 
+        // error 是一個 JS Error， 可等價於 Kotlin 的 Throwable。 
+        // stats 是一個 Webpack 的運行結果，內容參考 Webpack 的類型聲明
+
+        val casedError = error as? Throwable
+        if(casedError != null) {
+            // 有錯誤
+            console.log(casedError.message ?: "Webpack meets error")
+            console.log(casedError)
+            it.resumeWithException(casedError)
+        } else {
+            // ... 如果成功就繼續幹活～
+            it.resume(stats)
+        }
+    }
+}
+\end{lstlisting}
+
+webpack-dev-server的本體在\icode{webpack-dev-server/lib/Server.js}。它吃一個compiler（Webpack）和options（配置），返回一個\icode{Promise<void>}，把它引進來就可以了：
+
+\begin{lstlisting}
+val webpack = js("require('webpack')")
+val webpackDevServer = js("require('webpack-dev-server/lib/Server')")
+
+fun webpackDevServer(webpackConfig : dynamic, devServerConfig : dynamic) : Promise<Unit> { // Promise<void> 等於 Promise<Unit>
+    val compiler = try {
+        webpack(webpackOptions) // 嘗試創建一個 webpack compiler
+    } catch (e : Throwable) {
+        console.log(e)
+        process.exit(1) // 這裡就直接退出不管了
+    }
+
+    @Suppress("UNUSED_VARIABLE") 
+    val devServer = webpackDevServer
+
+    val server = try {
+        // 這裡必需用原生的 new。Kotlin 分不清這個 dynamic 是一個 class 還是一個 function，直接調用會按照 function 處理。
+        js("new devServer(devServerConfig, compiler)")
+    } catch (e : Throwable) {
+        console.log(e) // 這裡就直接退出不管了
+        process.exit(1)
+    }
+
+    listOf("SIGINT", "SIGTERM").forEach { // 當遇到 Signal Interrupt 和 Signal Terminal 的時候就關閉 dev server 並退出
+        process.on(it) { _: Any -> server.stop { process.exit() }; Unit }
+    }
+
+    // 啟動 Server，走你 (～ ￣ ▽ˉ) 
+    return server.start() as Promise<Unit>
+}
+\end{lstlisting}
+
+
+
+
+
+
+\section*{package.json 的配置}
+
+我們已經使用代碼來調用webpack和 webpack dev server了，\icode{package.json}的入口就也得改成Kotlin JS構建後的輸出。我這裡使用\icode{kotlin\_build/buildscript/buildscript.js}作為輸出，那麼\icode{package.json}就得這麼改了：
+
+\begin{lstlisting}
+{
+    "scripts": {
+        "serve": "node ./kotlin_build/buildscript/buildscript.js serve",
+        "build": "node ./kotlin_build/buildscript/buildscript.js build",
+    }
+}
+\end{lstlisting}
+
+
+
+
+
+
+\section*{編譯 Kotlin 程式碼，包含它的依賴}
+
+編譯之前還需要做一件事情。
+
+\icode{kotlinc-js}並不能讀取jar，我們需要把它們解壓出來。需要用到的只有\icode{kotlinx-nodejs}，那麼就把它解壓到一個地方去，例如\icode{kotlin\_build/bulidscript/lib}。
+
+\begin{lstlisting}
+unzip ./lib/kotlinx-nodejs-0.7.0.jar -d kotlin_build/bulidscript/lib
+\end{lstlisting}
+
+這時候就可以調用\icode{kotlinc-js}編譯我們的buildscript了：
+
+\begin{lstlisting}
+kotlinc-js ./buildSrc -module-kind commonjs -main call -source-map -libraries ./kotlin_build/bulidscript/lib -output ./kotlin_build/buildscript/buildscript.js
+\end{lstlisting}
+
+每次都手动调用构建是一件很麻烦的事情，我们可以写个脚本来自动化这些事情：
+
+\begin{lstlisting}
+build_script() {
+    # 清理舊產物
+    rm -rf ./kotlin_build/buildscript -v 
+    mkdir -pv ./kotlin_build/buildscript
+    unzip ./lib/kotlinx-nodejs-0.7.0.jar -d kotlin_build/bulidscript/lib
+    # 編譯
+    kotlinc-js ./buildSrc -module-kind commonjs -main call -source-map -libraries ./kotlin_build/bulidscript/lib -output ./kotlin_build/buildscript/buildscript.js
+}
+
+serve() {
+    node kotlin_build/buildscript/buildscript.js serve
+}
+
+build() {
+    node kotlin_build/buildscript/buildscript.js build
+}
+
+case $1 in
+serve)
+  serve
+  ;;
+build)
+  build
+  ;;
+*)
+  echo "Usage: script (serve|build)"
+  echo
+  ;;
+esac
+\end{lstlisting}
+
+寫好之後執行這個腳本，serve或者build就自動啦～
+
+
+
+
+
+
+\section*{後記}
+
+實際做這個東西花了好幾天，更多的還是卡在理解Webpack那神奇的配置上。快做好的時候才發現原來我參考的webpack配置已經是很老的版本了，於是對著新版本重新修整了一番。現在的Webpack配置比以前舊版本的要好，做完這個DSL之後其實效率一般般，編譯buildscrip也要花一定的時間，而且強弱類型系統之間的差距導致給Webpack寫Kotlin DSL是一件很燒事件燒腦袋的事情。
+
+我嘗試過用\icode{dukat}工具來生成Webpack API。結果是失敗了，\icode{dukat}要不property not found要不stack overflow讓我失望得很，所以只好乖乖手寫。
+
+在JavaScript的代碼中引入Kotlin包內聲明，需要按照像Java那樣的包結構定位聲明位置。Kotlin的代碼編譯後都被閉包起來封在局部，除非主動修改外圍環境，否則聲明內容不會洩漏。
+
+完整產物要比文章內的功能多，shell檔中包含了從maven倉庫下載依賴的過程，所以會更複雜，可以在\inlinehref{https://github.com/CattenLinger/kotlin-webpack-dsl}{GitHub上查看原始碼}。
+
+只是個能用的玩具，沒有打算深入開發，所以DSL不完整也不夠友好，如果繼續有想法的話或許會改進它。
+
+
+
+
+
+
+
+\reflist{
+    \item \refhref{https://kotlinlang.org/docs/compiler-reference.html\#kotlin-js-compiler-options}{Kotlin/JS compiler options}
+    \item \refhref{https://kotlinlang.org/docs/js-interop.html\#0}{Use JavaScript code from Kotlin}
+    \item \refhref{https://webpack.js.org/}{webpack.js.org}
+}
+
+
+
