@@ -4,7 +4,7 @@ This is an experimental collection of blog articles of [Catten Linger](https://c
 
 ## Copyright
 
-Copyright (c) 2017-2022 Catten Linger. All rights reserved.
+Copyright (c) 2015-2023 Catten Linger. All rights reserved.
 
 All articles belong to Catten Linger himself.
 
