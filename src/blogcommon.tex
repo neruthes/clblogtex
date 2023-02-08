@@ -1,0 +1,238 @@
+\usepackage[a4paper,textwidth=40em,tmargin=25mm,bmargin=35mm]{geometry}
+\usepackage{calc}
+\usepackage{amsmath,xltxtra,fontspec,xunicode}
+
+\usepackage{tcolorbox,longtable,tabularx,booktabs}
+
+\usepackage{paralist,enumitem}
+\setdefaultleftmargin{2em}{2em}{1em}{1em}{1em}{1em}
+
+\usepackage{datetime2}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+    colorlinks=false,
+    pdfpagemode=FullScreen
+}
+
+\usepackage{footmisc}
+\makeatletter
+\@addtoreset{footnote}{chapter}
+\makeatother
+
+
+\usepackage{framed}
+
+\usepackage{listings-ext}
+\lstset{
+	basicstyle=\ttfamily\footnotesize\selectfont,
+	numbersep=5pt,
+	backgroundcolor=\color{black!5},
+	showspaces=false,
+	showstringspaces=false,
+	showtabs=false,
+	tabsize=2,
+	captionpos=b,
+	breaklines=true,
+	breakatwhitespace=true,
+	breakautoindent=true,
+	linewidth=\textwidth
+}
+
+% \lstset{
+%     basicstyle=\ttfamily\footnotesize,
+%     numbers=left,
+%     numberstyle=\footnotesize,
+%     stepnumber=2,
+%     numbersep=5pt,
+%     backgroundcolor=\color{black!10},
+%     showspaces=false,
+%     showstringspaces=false,
+%     showtabs=false,
+%     tabsize=2,
+%     captionpos=b,
+%     breaklines=true,
+%     breakatwhitespace=true,
+%     breakautoindent=true,
+%     linewidth=\textwidth
+% }
+
+
+\newcommand{\myvphantom}[0]{\vphantom{QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890ςρθδφγηξλζχψβμ\"A}}
+
+\usepackage{xeCJK,xeCJKfntef}
+\xeCJKsetup{PunctStyle=plain,RubberPunctSkip=false,CJKglue=\hskip 0em plus 0.11em,CJKecglue=\hskip 0.25em plus 20em}
+
+
+% =========================================
+\usepackage{fancyhdr}
+\usepackage{graphicx,eso-pic}
+
+% Optional fonts: Libertinus Serif, Tinos, Literata
+\setmainfont{NewComputerModern}
+\setromanfont{NewComputerModern}
+\setsansfont{Noto Sans}
+\setmonofont{JetBrains Mono NL}
+\setCJKmainfont{Noto Serif CJK SC}
+\setCJKromanfont{Noto Serif CJK SC}
+\setCJKsansfont{Noto Sans CJK SC}
+\setCJKmonofont{Noto Sans CJK SC}
+
+\linespread{1.25}
+
+
+
+% Working with tocloft
+\usepackage{tocloft}
+\makeatletter
+\renewcommand{\@pnumwidth}{3em}
+\renewcommand{\@tocrmarg}{5em}
+\makeatother
+\renewcommand{\cftchapfont}{\ttfamily\small\raggedright}
+\settowidth{\cftchapnumwidth}{\cftchapfont{}2222-22-22==}
+\settowidth{\cftchapnumwidth}{\cftchapfont{}2222--}
+\renewcommand{\cftchappagefont}{\ttfamily\small}
+\setlength{\cftbeforechapskip}{1pt}
+\renewcommand{\contentsname}{\chaptertitlefont\myvphantom Contents}
+\let\Contentsline\contentsline
+\renewcommand{\contentsline}[3]{\Contentsline{#1}{#2}{\leftpadnumber{#3}}}
+\setcounter{tocdepth}{0}
+
+\newcommand{\leftpadnumber}[1]{#1}
+\newcommand{\chaptertitlefont}[0]{\rmfamily\LARGE\mdseries}
+
+
+
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0em}
+
+\setcounter{secnumdepth}{0}
+
+
+
+\title{Catten Linger Blog Articles Collection}
+\author{Volume \volid}
+
+% Chapter heading
+% \newcommand{\leftpad}[1]{\ifnum#1<100 0\ifnum#1<10 0\fi\fi#1}
+\newcommand{\leftpad}[1]{#1}
+
+
+\newcommand{\iarttag}[1]{#1\hskip 0.75em}
+\newcommand{\iartcat}[1]{#1\hskip 0.75em}
+
+\newcommand{\iarticle}[4]{
+    % argv: date, title, categoties, tags
+    \clearpage
+    \phantomsection
+    \begin{minipage}{\linewidth}
+        \chaptertitlefont
+        \myvphantom#2\par\vskip 10pt
+        \small
+        \ttfamily
+        % \sffamily
+        \parbox{\linewidth}{\myvphantom 日期：#1}
+        % \parbox{\linewidth}{\myvphantom 分类：#3}
+        % \parbox{\linewidth}{\myvphantom 标签：#4}
+    \end{minipage}\par
+    \vskip 15pt
+    \hrule
+    \vskip 40pt
+    % \addcontentsline{toc}{chapter}{\numberline{#1}#2}
+    \stepcounter{chapter}
+    \addcontentsline{toc}{chapter}{\numberline{\arabic{chapter}}#2}
+}
+
+\newcommand{\anchorTextColor}[1]{%
+    \textcolor{blue!80!green}{#1}%
+}
+\newcommand{\inlinehref}[2]{%
+    \phantomleadingspace%
+    {\anchorTextColor{%
+        \href{#1}{#2}%
+    }}%
+    \phantomleadingspace%
+    \footnote{URL: \href{#1}{#1}}%
+    \phantomleadingspace%
+}
+\newcommand{\reflistitem}[2]{%
+    % $1=url $2=text
+    \item \href{#1}{\raggedright#2\\\fontsize{8pt}{9.5pt}\ttfamily\anchorTextColor{#1}}%
+}
+\newcommand{\articlereflist}[1]{
+    \vskip 30pt
+    \vfill
+    \begin{minipage}{\linewidth}
+        参考资料\par
+        \begin{compactitem}\small
+            #1
+        \end{compactitem}
+    \end{minipage}
+}
+
+\newcommand{\phantomleadingspace}[0]{%
+    \ifhmode%
+        \hskip 7pt plus 15pt%
+    \fi%
+}
+\newcommand{\icode}[1]{%
+    \phantomleadingspace%
+    \texttt{\small\textcolor{red!60!black}{#1}}%
+    \hskip 5pt plus 20pt%
+}
+
+\newcommand{\infonote}[1]{%
+    \begin{tcolorbox}[colback=green!5!white,colframe=green!25!gray,boxrule=0.4pt,left=8pt,right=8pt]
+        \footnotesize\sffamily
+        #1
+    \end{tcolorbox}
+}
+
+
+
+
+
+
+
+% ===============================================
+% Statically linking ntexlibs common
+% ===============================================
+\newcommand{\Negold}[0]{\hskip 3.5pt\hfill}
+\newcommand{\Neg}[0]{\hskip 3.5pt plus 30pt}
+\newcommand{\tristarsepline}[0]{
+    \vspace{0.5em}%
+    \noindent\begin{minipage}{\linewidth}
+        \center
+        *\hspace{1.5em}*\hspace{1.5em}*
+    \end{minipage}%
+    \vspace{0.5em}
+}
+\newcommand{\pozhehao}[0]{%
+    {\fontspec{FandolSong}\CJKfontspec{FandolSong}——}%
+}
+\newcommand{\chineseindenting}[0]{
+	\setlength{\parindent}{2em}
+}
+
+% Footnote
+\newcommand{\blfootnote}[1]{%
+  \begingroup
+  \renewcommand\thefootnote{}\footnote{#1}%
+  \addtocounter{footnote}{-1}%
+  \endgroup
+}
+
+
+
+
+
+
+\newcommand{\mdmacroNoteInfo}[1]{
+    \begin{tcolorbox}[colframe=blue!30!white,colback=blue!5!white]
+        \begin{center}
+            \small
+            \begin{minipage}{40em}
+                #1
+            \end{minipage}
+        \end{center}
+    \end{tcolorbox}
+}

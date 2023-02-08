@@ -1,0 +1,6 @@
+/.tmp
+/_dist
+
+/data
+/vol*/articles
+/vol*/metadata
