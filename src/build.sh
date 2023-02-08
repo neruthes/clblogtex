@@ -29,6 +29,7 @@ function convert_latex() {
         --no-highlight \
         --shift-heading-level-by=-1 \
         -i "vol$volid/metadata/$ts.md" \
+        -f markdown \
         -t latex \
         -o "vol$volid/articles/$ts.2.tex"
 
@@ -71,32 +72,9 @@ function process_file() {
     done < "$mdfn" | sed 's|\t|  |g' > "vol$volid/metadata/$ts.yaml"
 
     ### Extraxt Markdown body
-    f_yaml_state=init
-    sed -E 's|\t|    |g' "$mdfn" | while IFS='' read -r line; do
-        if [[ "$line" == '---' ]]; then
-            if  [[ "$f_yaml_state" == init ]]; then
-                f_yaml_state=main
-            else
-                if  [[ "$f_yaml_state" == main ]]; then
-                    f_yaml_state=ending
-                fi
-            fi
-        fi
-        if [[ "$f_yaml_state" == over ]]; then
-            case "$line" in
-                ' '*)
-                    printf ''
-                    ;;
-                *)
-                    line="$(sed -E 's|\\([a-zA-Z])|\\textbackslash{}\1|g' <<< "$line")"
-                    ;;
-            esac
-            printf "%s\n" "$line"
-        fi
-        if [[ "$f_yaml_state" == ending ]]; then
-            f_yaml_state=over
-        fi
-    done > "vol$volid/metadata/$ts.md"
+    # f_yaml_state=init
+    sed -E 's|\t|    |g' "$mdfn" | nodefunc '.split("---\n")' '.slice(2)' '.join("---\n")' > "vol$volid/metadata/$ts.md"
+    # line="$(sed -E 's|\\([a-zA-Z])|\\textbackslash{}\1|g' <<< "$line")"
 
     convert_latex "$ts" "$mdfn"
 }
