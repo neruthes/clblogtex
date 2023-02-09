@@ -72,9 +72,8 @@ function process_file() {
     done < "$mdfn" | sed 's|\t|  |g' > "vol$volid/metadata/$ts.yaml"
 
     ### Extraxt Markdown body
-    # f_yaml_state=init
     sed -E 's|\t|    |g' "$mdfn" | nodefunc '.split("---\n")' '.slice(2)' '.join("---\n")' > "vol$volid/metadata/$ts.md"
-    # line="$(sed -E 's|\\([a-zA-Z])|\\textbackslash{}\1|g' <<< "$line")"
+    node src/mdclean.js "vol$volid/metadata/$ts.md"
 
     convert_latex "$ts" "$mdfn"
 }

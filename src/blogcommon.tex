@@ -126,7 +126,7 @@
     \phantomsection
     \begin{minipage}{\linewidth}
         \chaptertitlefont
-        \myvphantom#2\par\vskip 10pt
+        \myvphantom#2\par\vskip 20pt
         \small
         \ttfamily
         % \sffamily
@@ -134,9 +134,9 @@
         % \parbox{\linewidth}{\myvphantom 分类：#3}
         % \parbox{\linewidth}{\myvphantom 标签：#4}
     \end{minipage}\par
-    \vskip 15pt
+    \vskip 25pt
     \hrule
-    \vskip 40pt
+    \vskip 60pt
     % \addcontentsline{toc}{chapter}{\numberline{#1}#2}
     \stepcounter{chapter}
     \addcontentsline{toc}{chapter}{\numberline{\arabic{chapter}}#2}
@@ -226,13 +226,13 @@
 
 
 
-\newcommand{\mdmacroNoteInfo}[1]{
-    \begin{tcolorbox}[colframe=blue!30!white,colback=blue!5!white]
-        \begin{center}
-            \small
-            \begin{minipage}{40em}
-                #1
-            \end{minipage}
-        \end{center}
+\newcommand{\mdmacroNoteInfo}[1]{%
+    \begin{tcolorbox}[colframe=blue!30!white,boxrule=0.5pt,colback=blue!5!white]%
+        \begin{center}%
+            \small%
+            \begin{minipage}{41em}%
+                \myvphantom#1%
+            \end{minipage}%
+        \end{center}%
     \end{tcolorbox}
 }
